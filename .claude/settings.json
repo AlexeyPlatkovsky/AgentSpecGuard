@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(cat .benchmark/**)",
+      "Read(.benchmark/**)"
+    ]
+  }
+}
