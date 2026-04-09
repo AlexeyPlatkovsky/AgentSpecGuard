@@ -1,33 +1,34 @@
 # idea.md
 
-## Project Name (working)
-AgentSpecGuard (Portable Agent System)
+## Project Name
+AgentSpecGuard
 
 ---
 
 ## Core Idea
 
-This project is a reusable template that standardizes how AI agents perform development tasks across any repository.
+AgentSpecGuard is a reusable template that standardizes how AI agents perform development tasks across any repository.
 
 The goal is to make AI behavior:
 
-- predictable  
-- structured  
-- testable  
-- comparable across models  
+- predictable
+- structured
+- testable
+- comparable across models
 
-This is not an application.  
-It is a portable agent operating layer that can be integrated into any project.
+This is not an application.
+It is a portable agent operating layer.
 
 ---
 
 ## Key Objectives
 
-1. Enforce a consistent workflow for all AI-driven tasks  
-2. Ensure structured, machine-verifiable outputs  
-3. Provide a modular skill system  
-4. Control and validate context size (prompt budget)  
-5. Detect and measure behavioral drift across models and versions  
+1. Enforce a consistent workflow for all AI-driven tasks
+2. Ensure structured, machine-verifiable outputs
+3. Provide a modular skill system
+4. Keep AI execution surface minimal (KISS)
+5. Detect and measure behavioral drift across models and versions
+6. Measure token usage (token drain) and pipeline quality via benchmark
 
 ---
 
@@ -37,17 +38,19 @@ It is a portable agent operating layer that can be integrated into any project.
 
 Defines:
 
-- global workflow contract
-- task classification rules
-- skill selection rules
-- structured output requirement
-- context budget constraints
+- project identity
+- task classification
+- trivial vs non-trivial routing
+- skill selection rules (short table)
+- subagent usage rules
 
 Must remain:
 
-- compact  
-- stable  
-- implementation-agnostic  
+- compact
+- stable
+- routing-only
+- free of execution logic
+- free of benchmark logic
 
 ---
 
@@ -58,27 +61,50 @@ Location:
 
 Responsibilities:
 
-- define execution logic  
-- cover different domains (planning, coding, testing, etc.)  
-- be modular and reusable  
+- execute atomic actions
+- implement workflow steps
 
 Rules:
 
-- if a skill matches a task → it MUST be used  
-- skills are binding, not optional  
+- if a skill matches a task → it MUST be used
+- skills are binding
+- skills must be minimal and composable
+- skills must NOT orchestrate workflows
+
+MVP skills:
+
+- task-manager
+- task-discovery
+- task-implementation
+- task-test-design
+- task-validation
+- instruction-budget-verify
+- instruction-doc-verify
+- work-with-beads
+- work-with-git
 
 ---
 
 ### 3. Subagents
 
 Location:
-.claude/subagents/
+.claude/agents/
 
 Responsibilities:
 
-- orchestration  
-- validation  
-- review  
+- independent review
+- validation
+
+Rules:
+
+- NOT used for default orchestration
+- used only when explicitly required by workflow or user
+
+Mandatory:
+
+- code-reviewer subagent for all non-trivial code tasks
+
+No planner subagent in MVP.
 
 ---
 
@@ -89,251 +115,140 @@ Location:
 
 Responsibilities:
 
-- define ordered execution steps  
-- provide task-type-specific flows  
+- define ordered execution steps per task type
+- contain no implementation logic
+- stay minimal
+
+Examples:
+
+- bugfix.md
+- feature.md
+- docs.md
+- refactor.md
+- test-only.md
+- investigation.md
+- mixed.md
 
 ---
 
-### 5. Contracts
+### 5. Task Execution Model
 
-Location:
-.claude/contracts/
+#### Step 1 — Classification
 
-Defines:
+Every task MUST be classified as:
 
-- allowed workflow steps  
-- step ordering rules  
-- required skills per task type  
-- output schema  
-
----
-
-### 6. Evaluation System
-
-Location:
-.claude/eval/
-
-Responsibilities:
-
-- validate agent behavior  
-- detect drift  
-- compare outputs across models  
-
-Includes:
-
-- golden prompts  
-- expected structured outputs  
-- scoring rules  
+- bugfix
+- feature
+- refactor
+- docs
+- test-only
+- investigation
+- mixed
 
 ---
 
-### 7. Context Budget System
+#### Step 2 — Trivial vs Non-Trivial
 
-Location:
-.claude/contracts/context-budget.yaml
+### Trivial
 
-Purpose:
+- small scope
+- single file or minimal change
+- no contracts or workflows affected
 
-- control prompt size  
-- prevent instruction bloat  
-- maintain performance and stability  
+Execution:
+
+- minimal workflow
+- minimal skills
+- no subagents
 
 ---
 
-## Workflow Contract (Invariant)
+### Non-Trivial
+
+- multi-step
+- affects behavior or structure
+- requires validation
+
+Execution:
+
+- MUST invoke `task-manager` skill
+- MUST select a workflow from `.claude/workflows/`
+- MUST follow workflow steps
+- MUST use appropriate skills
+- MUST invoke `code-reviewer` subagent for code tasks
+- MUST produce structured output
+
+---
+
+### 6. Workflow Contract (Invariant)
 
 Every non-trivial task MUST follow:
 
-1. classify_task  
-2. discover_context  
-3. identify_constraints  
-4. select_skills  
-5. generate_plan  
-6. define_changes  
-7. define_tests  
-8. validate_solution  
+1. classify_task
+2. discover_context
+3. identify_constraints
+4. select_skills
+5. generate_plan
+6. define_changes
+7. define_tests
+8. validate_solution
 
-Rules:
-
-- no step may be skipped silently  
-- skipped steps must be justified  
+Workflows define how this sequence is applied per task type.
 
 ---
 
-## Task Classification
-
-Mandatory first step.
-
-Allowed types:
-
-- bugfix  
-- feature  
-- refactor  
-- docs  
-- test-only  
-- investigation  
-- mixed  
-
----
-
-## Structured Output Requirement
+### 7. Structured Output Requirement
 
 Every non-trivial task MUST produce:
 
-1. Markdown output (human-readable)  
-2. JSON output (machine-readable)  
+1. Markdown report in table-view (human-readable)
+It must include:
 
-JSON must include:
-
-- task_type  
-- workflow  
-- steps  
-- skills_used  
-- validation  
+- task type
+- workflow name
+- steps with used skills
 
 ---
 
-## Context Budget Constraints
+## Benchmark System
 
-Context usage is a first-class constraint.
+Location:
+.benchmark/
 
-Must validate:
+Purpose:
 
-1. Individual file size  
-2. Assembled task context size  
-3. Bundle size for task types  
+- evaluate AI behavior
+- measure drift across models
+- measure token usage (token drain)
+- validate workflow compliance
 
----
+Contents:
 
-### Budget Rules
-
-- prefer minimal context  
-- avoid duplication  
-- move details from global → local  
-- keep AGENTS.md lightweight  
-
----
-
-### Budget Validation Requirement
-
-If modified:
-
-- AGENTS.md  
-- skills  
-- subagents  
-- workflows  
-
-Then MUST run:
-
-- context-budget-verify  
-- doc-verify (if structure changed)  
+- prompts/
+- golden/
+- scoring/
+- scripts/
+- configs/
+- reports/
 
 ---
 
-### Thresholds
+## Instruction Budget Validation
 
-Each entity must support:
+Instruction size is validated only when instruction-layer files change.
 
-- recommended (soft limit)  
-- hard limit  
+Applies to:
 
-Behavior:
+- AGENTS.md
+- skills
+- workflows
+- subagents
 
-- exceed soft → warning  
-- exceed hard → failure  
+Validation is performed by:
 
----
+- instruction-budget-verify skill
+- external script from `.benchmark/scripts/`
 
-## Anti-Drift System
+Thresholds are defined in:
 
-The system must detect deviations in:
-
-- workflow steps  
-- step ordering  
-- skill selection  
-- output structure  
-
-Deviation without justification = failure  
-
----
-
-## Evaluation Tests
-
-1. Workflow Compliance Tests  
-2. Skill Selection Tests  
-3. Output Schema Tests  
-4. Context Budget Tests  
-5. Cross-Model Stability Tests  
-
----
-
-## Scoring System
-
-Evaluation should produce a score based on:
-
-- task classification correctness  
-- workflow compliance  
-- step ordering  
-- skill selection  
-- output schema validity  
-
----
-
-## Constraints
-
-Mandatory:
-
-- workflow must always be followed  
-- structured output is required  
-- skills must be used when matched  
-- context must be validated  
-
-Forbidden:
-
-- skipping workflow steps  
-- unstructured output  
-- ignoring skills  
-- uncontrolled context growth  
-- mixing unrelated changes  
-
----
-
-## Design Principles
-
-- modularity over monolith  
-- composition over duplication  
-- explicit over implicit  
-- measurable over subjective  
-
----
-
-## Success Criteria
-
-- consistent workflow across runs  
-- comparable structured outputs  
-- measurable drift  
-- controlled context size  
-
----
-
-## Non-Goals
-
-- perfect code generation  
-- model-specific tuning  
-- replacing human judgment  
-
----
-
-## Summary
-
-This project defines a standard for AI behavior.
-
-It combines:
-
-- workflow contract  
-- skill system  
-- structured outputs  
-- context control  
-- evaluation framework  
-
-to ensure consistent, predictable, and measurable AI execution.
+.benchmark/configs/instruction-budgets.yaml
