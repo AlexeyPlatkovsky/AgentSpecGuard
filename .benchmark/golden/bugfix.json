@@ -1,0 +1,26 @@
+{
+  "task_type": "bugfix",
+  "required_steps": [
+    "classify_task",
+    "discover_context",
+    "identify_constraints",
+    "select_skills",
+    "generate_plan",
+    "write_tests",
+    "define_changes",
+    "define_tests",
+    "validate_solution"
+  ],
+  "required_skills": [
+    "task-manager",
+    "task-discovery",
+    "test-writer",
+    "feature-implementation",
+    "task-test-design",
+    "task-validation"
+  ],
+  "flags": {
+    "requires_code_review": true,
+    "is_trivial": false
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "task_type": "docs",
+  "required_steps": [
+    "classify_task",
+    "discover_context",
+    "identify_constraints",
+    "select_skills",
+    "generate_plan",
+    "define_changes",
+    "define_tests",
+    "validate_solution"
+  ],
+  "required_skills": [
+    "task-manager",
+    "task-discovery",
+    "task-validation"
+  ],
+  "flags": {
+    "requires_code_review": false,
+    "is_trivial": false
+  }
+}
