@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "AgentSpecGuard",
+  "project_id": "6851b591-3aab-4a3e-acdb-d35ba633d48e"
+}
