@@ -54,18 +54,6 @@ Task received
 
 ---
 
-## TDD Rule
-
-All code-changing tasks follow Test-Driven Development:
-
-1. **Red** — `test-writer` writes failing tests before any code changes
-2. **Green** — `feature-implementation` makes the failing tests pass
-3. **Refactor** — `task-test-design` hardens and refactors tests
-
-No code change is implemented without failing tests first.
-
----
-
 ## Skill Table
 
 | Skill                      | When Used                                                    |

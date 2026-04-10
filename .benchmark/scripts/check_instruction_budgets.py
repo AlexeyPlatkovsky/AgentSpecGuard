@@ -6,8 +6,9 @@ and approximates token counts (words * 1.3).
 Exits with code 1 if any hard limit is exceeded.
 """
 
+import argparse
+import json
 import sys
-import os
 from pathlib import Path
 
 try:
@@ -50,70 +51,160 @@ def check_file(filepath: str, hard_limit: int) -> tuple[bool, int]:
     return tokens <= hard_limit, tokens
 
 
-def main():
+def get_required_limit(config: dict, section: str, field: str) -> int:
+    section_data = config.get(section)
+    if not isinstance(section_data, dict) or field not in section_data:
+        raise KeyError(f"Missing config value: {section}.{field}")
+    return int(section_data[field])
+
+
+def status_label(ok: bool) -> str:
+    return "PASSED" if ok else "FAILED"
+
+
+def empty_section(key: str, name: str, limit: int) -> dict:
+    return {
+        "key": key,
+        "name": name,
+        "status": "PASSED",
+        "limit": limit,
+        "total_files": 0,
+        "passed_files": 0,
+        "failed_files": 0,
+        "files": [],
+        "failures": [],
+    }
+
+
+def add_file_result(section: dict, rel_path: str, ok: bool, tokens: int, limit: int) -> None:
+    file_result = {
+        "section": section["name"],
+        "path": rel_path,
+        "status": status_label(ok),
+        "tokens": tokens,
+        "limit": limit,
+    }
+    section["files"].append(file_result)
+    section["total_files"] += 1
+    if ok:
+        section["passed_files"] += 1
+    else:
+        section["failed_files"] += 1
+        section["status"] = "FAILED"
+        section["failures"].append(file_result)
+
+
+def build_report(root: Path, config: dict) -> dict:
+    agents_limit = get_required_limit(config, "agents_md", "hard_limit")
+    skills_limit = get_required_limit(config, "skills", "per_file_hard_limit")
+    workflows_limit = get_required_limit(config, "workflows", "per_file_hard_limit")
+    subagents_limit = get_required_limit(config, "subagents", "per_file_hard_limit")
+
+    report = {
+        "root": str(root),
+        "overall_status": "PASSED",
+        "sections": {
+            "agents_md": empty_section("agents_md", "AGENTS.md", agents_limit),
+            "skills": empty_section("skills", "Skills", skills_limit),
+            "workflows": empty_section("workflows", "Workflows", workflows_limit),
+            "subagents": empty_section("subagents", "Subagents", subagents_limit),
+        },
+        "failures": [],
+    }
+
+    agents_md = root / "AGENTS.md"
+    if agents_md.exists():
+        ok, tokens = check_file(str(agents_md), agents_limit)
+        add_file_result(report["sections"]["agents_md"], "AGENTS.md", ok, tokens, agents_limit)
+
+    skills_dir = root / ".claude" / "skills"
+    if skills_dir.exists():
+        for skill_file in sorted(skills_dir.rglob("SKILL.md")):
+            ok, tokens = check_file(str(skill_file), skills_limit)
+            rel = str(skill_file.relative_to(root))
+            add_file_result(report["sections"]["skills"], rel, ok, tokens, skills_limit)
+
+    workflows_dir = root / ".claude" / "workflows"
+    if workflows_dir.exists():
+        for workflow_file in sorted(workflows_dir.glob("*.md")):
+            ok, tokens = check_file(str(workflow_file), workflows_limit)
+            rel = str(workflow_file.relative_to(root))
+            add_file_result(report["sections"]["workflows"], rel, ok, tokens, workflows_limit)
+
+    agents_dir = root / ".claude" / "agents"
+    if agents_dir.exists():
+        for agent_file in sorted(agents_dir.rglob("*.md")):
+            ok, tokens = check_file(str(agent_file), subagents_limit)
+            rel = str(agent_file.relative_to(root))
+            add_file_result(report["sections"]["subagents"], rel, ok, tokens, subagents_limit)
+
+    failures = []
+    for section in report["sections"].values():
+        failures.extend(section["failures"])
+        if section["status"] == "FAILED":
+            report["overall_status"] = "FAILED"
+
+    report["failures"] = failures
+    return report
+
+
+def print_human_report(report: dict) -> None:
+    sections = report["sections"]
+    print_section_files(sections["agents_md"])
+    print_section_files(sections["skills"])
+    print_section_files(sections["workflows"])
+    print_section_files(sections["subagents"])
+
+    if report["failures"]:
+        print(f"\n{len(report['failures'])} file(s) exceeded budget limits.")
+    else:
+        print("\nAll files within budget limits.")
+
+
+def print_section_files(section: dict) -> None:
+    for file_result in section["files"]:
+        status = "PASS" if file_result["status"] == "PASSED" else "FAIL"
+        print(
+            f"  {status}: {file_result['path']} "
+            f"— {file_result['tokens']}/{file_result['limit']} tokens"
+        )
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Emit the full report as JSON.",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
     root = Path(__file__).resolve().parents[2]
     config_path = root / ".benchmark" / "configs" / "instruction-budgets.yaml"
 
     if not config_path.exists():
         print(f"Config not found: {config_path}")
-        sys.exit(1)
+        return 1
 
     config = load_config(str(config_path))
-    failures = []
 
-    # Check AGENTS.md
-    agents_md = root / "AGENTS.md"
-    if agents_md.exists():
-        limit = config.get("agents_md", {}).get("hard_limit", 1500)
-        ok, tokens = check_file(str(agents_md), limit)
-        status = "PASS" if ok else "FAIL"
-        print(f"  {status}: AGENTS.md — {tokens}/{limit} tokens")
-        if not ok:
-            failures.append(f"AGENTS.md: {tokens} > {limit}")
+    try:
+        report = build_report(root, config)
+    except KeyError as exc:
+        print(str(exc))
+        return 1
 
-    # Check skills
-    skills_dir = root / ".claude" / "skills"
-    if skills_dir.exists():
-        limit = config.get("skills", {}).get("per_file_hard_limit", 500)
-        for skill_file in sorted(skills_dir.rglob("SKILL.md")):
-            ok, tokens = check_file(str(skill_file), limit)
-            rel = skill_file.relative_to(root)
-            status = "PASS" if ok else "FAIL"
-            print(f"  {status}: {rel} — {tokens}/{limit} tokens")
-            if not ok:
-                failures.append(f"{rel}: {tokens} > {limit}")
-
-    # Check workflows
-    workflows_dir = root / ".claude" / "workflows"
-    if workflows_dir.exists():
-        limit = config.get("workflows", {}).get("per_file_hard_limit", 400)
-        for wf_file in sorted(workflows_dir.glob("*.md")):
-            ok, tokens = check_file(str(wf_file), limit)
-            rel = wf_file.relative_to(root)
-            status = "PASS" if ok else "FAIL"
-            print(f"  {status}: {rel} — {tokens}/{limit} tokens")
-            if not ok:
-                failures.append(f"{rel}: {tokens} > {limit}")
-
-    # Check subagents
-    agents_dir = root / ".claude" / "agents"
-    if agents_dir.exists():
-        limit = config.get("subagents", {}).get("per_file_hard_limit", 500)
-        for agent_file in sorted(agents_dir.rglob("AGENT.md")):
-            ok, tokens = check_file(str(agent_file), limit)
-            rel = agent_file.relative_to(root)
-            status = "PASS" if ok else "FAIL"
-            print(f"  {status}: {rel} — {tokens}/{limit} tokens")
-            if not ok:
-                failures.append(f"{rel}: {tokens} > {limit}")
-
-    if failures:
-        print(f"\n{len(failures)} file(s) exceeded budget limits.")
-        sys.exit(1)
+    if args.json_output:
+        print(json.dumps(report, indent=2))
     else:
-        print("\nAll files within budget limits.")
-        sys.exit(0)
+        print_human_report(report)
+
+    return 1 if report["failures"] else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

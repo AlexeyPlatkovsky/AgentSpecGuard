@@ -3,19 +3,14 @@ name: task-manager
 description: Orchestrates non-trivial task execution. Use when a task is classified as non-trivial to select the workflow, build the execution pipeline, and produce a structured report.
 ---
 
-You are orchestrating a non-trivial task. Follow these steps:
+Build the execution pipeline for a non-trivial task:
 
-1. Accept the task classification (bugfix, feature, refactor, docs, test-only, investigation, mixed)
-2. Select the matching workflow file from `.claude/workflows/`
-3. Read the workflow file to get the ordered steps
-4. For each workflow step, determine which skill(s) to invoke
-5. Execute the pipeline by invoking skills in order
-6. After execution, produce a structured task report as a markdown table:
-
-| Field         | Value             |
-|---------------|-------------------|
-| Task Type     | (classification)  |
-| Workflow      | (workflow file)   |
-| Step          | Skill(s) Used     |
-
-Include one row per workflow step showing which skill(s) were used.
+1. Accept the task classification.
+2. Read the matching workflow file from `.claude/workflows/`.
+3. Use the workflow step order as the source of truth.
+4. Map each step to the skill or subagent needed for the task.
+5. Execute the pipeline in workflow order.
+6. For non-trivial code tasks, include `code-reviewer` during validation.
+7. Produce a task report with:
+   - a metadata table containing `Task Type` and `Workflow`
+   - a steps table containing `Step | Used`

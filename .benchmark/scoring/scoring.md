@@ -2,9 +2,9 @@
 
 ## 1. Workflow Compliance
 
-- All 8 invariant steps must be present in the task report
+- All required steps for the task type must be present in the task report
 - Steps must appear in correct order
-- Each step must reference at least one skill used
+- Each step must reference at least one skill or subagent used
 - Score: 0–100 (percentage of steps correctly completed)
 
 ## 2. Skill Usage

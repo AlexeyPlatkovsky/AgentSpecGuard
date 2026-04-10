@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - AGENTS.md
+      - .claude/skills/**
+      - .claude/agents/**
+      - .claude/workflows/**
+
+jobs:
+  instruction-budget-check:
+    name: Instruction Budget Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: python3 -m pip install --upgrade pip pyyaml
+
+      - name: Run instruction budget check
+        id: budget
+        shell: bash
+        run: |
+          set +e
+          python3 .benchmark/scripts/check_instruction_budgets.py --json > budget-report.json
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Build pull request comment
+        id: comment
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(Path("budget-report.json").read_text())
+          icon = {"PASSED": "✅", "FAILED": "❌"}
+
+          lines = [
+              "## Instruction Budget Check",
+              "",
+              "| Scope | Status | Details |",
+              "| --- | --- | --- |",
+          ]
+
+          section_order = ["agents_md", "skills", "workflows", "subagents"]
+          for section_key in section_order:
+              section = report["sections"][section_key]
+              status = f'{icon[section["status"]]} {section["status"]}'
+              if section_key == "agents_md":
+                  details = (
+                      "`AGENTS.md` checked"
+                      if section["status"] == "PASSED"
+                      else f'{section["failed_files"]} file exceeded the limit'
+                  )
+              else:
+                  details = (
+                      f'{section["total_files"]} files checked'
+                      if section["status"] == "PASSED"
+                      else f'{section["failed_files"]} of {section["total_files"]} files exceeded the limit'
+                  )
+              lines.append(f'| {section["name"]} | {status} | {details} |')
+
+          if report["overall_status"] == "PASSED":
+              lines.extend(
+                  [
+                      "",
+                      f'- AGENTS.md: {icon["PASSED"]} PASSED',
+                      f'- Total skills: {report["sections"]["skills"]["total_files"]} {icon["PASSED"]} PASSED',
+                      f'- Total workflows: {report["sections"]["workflows"]["total_files"]} {icon["PASSED"]} PASSED',
+                      f'- Total subagents: {report["sections"]["subagents"]["total_files"]} {icon["PASSED"]} PASSED',
+                  ]
+              )
+          else:
+              lines.extend(
+                  [
+                      "",
+                      "### Violations",
+                      "",
+                      "| File | Scope | Tokens | Limit |",
+                      "| --- | --- | ---: | ---: |",
+                  ]
+              )
+              for failure in report["failures"]:
+                  lines.append(
+                      f'| `{failure["path"]}` | {failure["section"]} | '
+                      f'{failure["tokens"]} | {failure["limit"]} |'
+                  )
+
+          body = "\n".join(lines)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              print("body<<EOF", file=fh)
+              print(body, file=fh)
+              print("EOF", file=fh)
+          PY
+
+      - name: Post pull request comment
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          COMMENT_BODY: ${{ steps.comment.outputs.body }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: process.env.COMMENT_BODY,
+            });
+
+      - name: Fail job when budgets are exceeded
+        if: steps.budget.outputs.exit_code != '0'
+        run: exit 1
