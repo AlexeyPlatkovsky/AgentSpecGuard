@@ -6,6 +6,7 @@
     "identify_constraints",
     "select_skills",
     "generate_plan",
+    "write_tests",
     "define_changes",
     "define_tests",
     "validate_solution"
@@ -13,7 +14,8 @@
   "required_skills": [
     "task-manager",
     "task-discovery",
-    "task-implementation",
+    "test-writer",
+    "feature-implementation",
     "task-test-design",
     "task-validation"
   ],

@@ -1,20 +1,11 @@
-# Skill: task-validation
+---
+name: task-validation
+description: Validates that the solution meets requirements and has no regressions. Use during the validate_solution workflow step.
+---
 
-## Purpose
+Validate the solution:
 
-Validates that the solution meets requirements and produces no regressions.
-
-## When Used
-
-During the `validate_solution` workflow step.
-
-## Inputs
-
-- Implementation changes
-- Test results
-- Original requirements
-
-## Outputs
-
-- Validation result (pass/fail)
-- Issues found (if any)
+1. Verify implementation matches the original requirements
+2. Run tests and confirm they pass
+3. Check for regressions in affected areas
+4. Report validation result as **pass** or **fail**, with any issues found

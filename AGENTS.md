@@ -49,22 +49,36 @@ Non-trivial tasks MUST be routed to the `task-manager` skill.
 ```
 Task received
   ├── Trivial → execute directly (minimal skills, no subagents)
-  └── Non-Trivial → invoke task-manager skill
+  └── Non-Trivial → invoke `task-manager` skill
 ```
+
+---
+
+## TDD Rule
+
+All code-changing tasks follow Test-Driven Development:
+
+1. **Red** — `test-writer` writes failing tests before any code changes
+2. **Green** — `feature-implementation` makes the failing tests pass
+3. **Refactor** — `task-test-design` hardens and refactors tests
+
+No code change is implemented without failing tests first.
 
 ---
 
 ## Skill Table
 
-| Skill                      | When Used                                              |
-|----------------------------|--------------------------------------------------------|
-| task-manager               | Orchestrates non-trivial task execution                |
-| task-discovery             | Gathers context and constraints for a task             |
-| task-implementation        | Executes code changes                                  |
-| task-test-design           | Designs and generates tests                            |
-| task-validation            | Validates solution against requirements                |
-| instruction-budget-verify  | Validates instruction file sizes against budget limits |
-| instruction-doc-verify     | Validates structural consistency of instruction files  |
+| Skill                      | When Used                                                    |
+|----------------------------|--------------------------------------------------------------|
+| business-analyst           | Clarifies requirements, acceptance criteria, and business rules |
+| feature-implementation     | Implements code changes to pass failing tests (TDD green phase) |
+| instruction-budget-verify  | Validates instruction file sizes against budget limits       |
+| instruction-doc-verify     | Validates structural consistency of instruction files        |
+| task-discovery             | Gathers context and constraints for a task                   |
+| task-manager               | Orchestrates non-trivial task execution                      |
+| task-test-design           | Hardens and refactors tests after implementation             |
+| task-validation            | Validates solution against requirements                      |
+| test-writer                | Writes failing tests before implementation (TDD red phase)   |
 
 ---
 

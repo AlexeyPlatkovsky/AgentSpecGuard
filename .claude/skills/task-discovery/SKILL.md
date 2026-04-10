@@ -1,20 +1,13 @@
-# Skill: task-discovery
+---
+name: task-discovery
+description: Gathers context and identifies constraints for a task. Use during the discover_context and identify_constraints workflow steps.
+---
 
-## Purpose
+Gather context and constraints for the current task:
 
-Gathers context and identifies constraints relevant to a task.
-
-## When Used
-
-During the `discover_context` and `identify_constraints` workflow steps.
-
-## Inputs
-
-- Task description
-- Task classification
-- Relevant file paths or components
-
-## Outputs
-
-- Context summary (relevant code, dependencies, patterns)
-- Identified constraints (contracts, boundaries, risks)
+1. Identify relevant files, components, and dependencies
+2. Review existing code patterns and conventions
+3. Determine contracts, architectural boundaries, and risk areas
+4. Summarize findings as:
+   - **Context**: relevant code, dependencies, patterns found
+   - **Constraints**: contracts, boundaries, risks identified

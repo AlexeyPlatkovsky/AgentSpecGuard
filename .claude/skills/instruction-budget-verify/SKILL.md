@@ -1,22 +1,13 @@
-# Skill: instruction-budget-verify
+---
+name: instruction-budget-verify
+description: Validates instruction-layer files against token budget limits. Use when AGENTS.md, skills, workflows, or subagent files change.
+---
 
-## Purpose
+Check instruction-layer files against budget limits:
 
-Validates that instruction-layer files stay within defined token budget limits.
-
-## When Used
-
-When any instruction-layer file changes (AGENTS.md, skills, workflows, subagents).
-
-## Inputs
-
-- Changed instruction-layer file paths
-
-## Outputs
-
-- Budget check result (pass/fail per file)
-- Token counts vs thresholds
-
-## Mechanism
-
-Invokes the external script `.benchmark/scripts/check_instruction_budgets.py` which reads thresholds from `.benchmark/configs/instruction-budgets.yaml`.
+1. Run the budget validation script:
+   ```bash
+   python3 .benchmark/scripts/check_instruction_budgets.py
+   ```
+2. Report the results — pass or fail per file, with token counts vs thresholds
+3. If any file exceeds its hard limit, flag it for reduction

@@ -1,8 +1,14 @@
 {
+  "model": "sonnet",
   "permissions": {
-    "deny": [
+    "ask": [
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit -m ':*)",
       "Bash(cat .benchmark/**)",
-      "Read(.benchmark/**)"
-    ]
+      "Read(.benchmark/**)",
+      "Write(.benchmark/**)"
+    ],
+    "deny": []
   }
 }
