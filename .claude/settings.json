@@ -1,32 +1,12 @@
 {
-  "hooks": {
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "command": "bd prime",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "bd prime",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ]
-  },
   "model": "sonnet",
   "permissions": {
+    "allow": [
+      "Bash(bd:*)",
+      "Bash(bd list:*)",
+      "Bash(git add:*)"
+    ],
     "ask": [
-      "Bash(git add:*)",
       "Bash(git checkout:*)",
       "Bash(git commit -m ':*)",
       "Bash(cat .benchmark/**)",
