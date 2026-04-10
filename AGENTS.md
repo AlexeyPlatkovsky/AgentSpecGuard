@@ -79,6 +79,7 @@ No code change is implemented without failing tests first.
 | task-test-design           | Hardens and refactors tests after implementation             |
 | task-validation            | Validates solution against requirements                      |
 | test-writer                | Writes failing tests before implementation (TDD red phase)   |
+| work-with-git              | Stages, commits, and pushes completed work at end of workflow |
 
 ---
 
