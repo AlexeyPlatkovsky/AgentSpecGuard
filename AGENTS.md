@@ -59,6 +59,7 @@ Task received
 | Skill                      | When Used                                                    |
 |----------------------------|--------------------------------------------------------------|
 | business-analyst           | Clarifies requirements, acceptance criteria, and business rules |
+| explain-code               | Explains implemented code paths and design flow from the actual code |
 | feature-implementation     | Implements code changes to pass failing tests (TDD green phase) |
 | instruction-budget-verify  | Validates instruction file sizes against budget limits       |
 | instruction-doc-verify     | Validates structural consistency of instruction files        |
@@ -67,6 +68,7 @@ Task received
 | task-test-design           | Hardens and refactors tests after implementation             |
 | task-validation            | Validates solution against requirements                      |
 | test-writer                | Writes failing tests before implementation (TDD red phase)   |
+| work-with-beads            | Manages Beads issue tracking for non-trivial work            |
 | work-with-git              | Stages, commits, and pushes completed work at end of workflow |
 
 ---
