@@ -5,10 +5,10 @@ agents_md:
   hard_limit: 1500
 
 skills:
-  per_file_hard_limit: 500
+  per_file_hard_limit: 750
 
 workflows:
-  per_file_hard_limit: 400
+  per_file_hard_limit: 500
 
 subagents:
-  per_file_hard_limit: 500
+  per_file_hard_limit: 1000
