@@ -1,0 +1,1 @@
+Read AGENTS.md and follow its instructions. Do not bypass anything.
