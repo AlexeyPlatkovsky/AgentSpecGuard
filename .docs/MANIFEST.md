@@ -160,7 +160,7 @@ Avoid:
 
 ---
 
-## Execution Layer (Stored under `.claude/`)
+## Execution Layer (Stored under `.claude/` by default)
 
 ### `.claude/skills/`
 Atomic, reusable procedures.
@@ -214,6 +214,34 @@ Responsibilities:
 Must NOT:
 - duplicate AGENTS.md
 - implement execution steps
+
+---
+
+# Capability Registry
+
+AGENTS.md must contain the canonical registry of all available:
+
+- skills
+- agents
+
+Each entry must include:
+- name
+- purpose
+- when to use
+- when not to use
+
+This registry exists to ensure:
+- all actors (main agent and subagents) share the same capabilities view
+- consistent routing and decision making
+- no hidden or implicit functionality
+
+Restrictions:
+- AGENTS.md must NOT contain implementation details
+- AGENTS.md must NOT duplicate skill or agent logic
+- Detailed behavior must remain in corresponding files
+
+If a capability is not listed in AGENTS.md:
+- it is considered non-existent for orchestration purposes
 
 ---
 
