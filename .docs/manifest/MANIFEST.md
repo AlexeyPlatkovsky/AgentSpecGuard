@@ -217,6 +217,51 @@ Must NOT:
 
 ---
 
+# Mandatory Skills
+
+## Brainstorm Skill (Required in Every Project)
+
+Every project built with this framework **must** include a brainstorm skill.
+
+This is non-negotiable regardless of project size.
+
+### Why it is mandatory
+
+Discussion and design decisions are a core part of any project lifecycle.
+Without a canonical brainstorm skill:
+- AI behavior during discussions is unpredictable
+- question/answer protocols are inconsistent
+- design decisions are not properly structured
+
+### What it must implement
+
+The brainstorm skill must follow the protocol defined in `brainstorm_protocol.md`.
+
+It must:
+- ask exactly one question at a time
+- provide 2–3 concrete, comparable options per question
+- highlight risks, trade-offs, and edge cases
+- stop and wait for user input after presenting options
+- never mix brainstorming with execution
+- defer final decisions to the user
+
+### Where it lives
+
+`.claude/skills/brainstorm.md`
+
+It must reference `brainstorm_protocol.md` as its canonical behavior source.
+It must NOT redefine the protocol inline.
+
+### Registration
+
+It must be registered in `AGENTS.md` like any other skill:
+- name: brainstorm
+- purpose: structured discussion and design decision support
+- when to use: any time a design, architecture, or workflow decision must be made
+- when not to use: during execution phases; after a decision is already made
+
+---
+
 # Capability Registry
 
 AGENTS.md must contain the canonical registry of all available:
@@ -343,6 +388,7 @@ Avoid:
 Use:
 - AGENTS.md
 - minimal skills
+- brainstorm skill (mandatory)
 
 ---
 
@@ -355,6 +401,9 @@ Add:
 Optional:
 - manager logic
 
+Always include:
+- brainstorm skill
+
 ---
 
 ## Large Projects
@@ -364,6 +413,7 @@ Must have:
 - workflows
 - risk-based routing
 - subagents (selectively)
+- brainstorm skill
 
 Must avoid:
 - duplication
