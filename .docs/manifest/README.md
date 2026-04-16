@@ -21,8 +21,8 @@ The framework is built around one canonical document (`MANIFEST.md`) and three s
 | `MANIFEST.md` | The canonical source of truth. Defines all principles, rules, and structural requirements for any AI instruction system. |
 | `brainstorm_protocol.md` | Canonical definition of brainstorming behavior. Referenced by prompts and skills — never duplicated. |
 | `01_initial.md` | Phase 1 prompt. Builds a minimal viable instruction set for your project from scratch or adjusts an existing one. |
-| `02_evolution.md` | Phase 2 prompt. Expands your instruction system based on your team's real workflows and daily routines. |
-| `03_review.md` | Phase 3 prompt. Audits your instruction system for compliance with MANIFEST principles. |
+| `02_review.md` | Phase 3 prompt. Audits your instruction system for compliance with MANIFEST principles. |
+| `03_evolution.md` | Phase 2 prompt. Expands your instruction system based on your team's real workflows and daily routines. |
 
 ---
 
@@ -60,27 +60,8 @@ The three prompts are designed to be used **in order**. Each phase builds on the
 
 ---
 
-#### Step 2 — Evolve (`02_evolution.md`)
 
-**When:** Your project has grown, your team has expanded, or your workflows have matured beyond the initial setup.
-
-**What it does:**
-- Starts with a free-form conversation about your team's daily routines and workflows
-- Identifies what skills, agents, and workflows would genuinely help
-- Proposes a complete set of additions at once
-- You review and approve before anything is created
-
-**Goal:** A comprehensive instruction system built from real usage patterns, not assumptions.
-
-**How to run:**
-1. Open a new AI session
-2. Provide: `MANIFEST.md`, `brainstorm_protocol.md`, `02_evolution.md`
-3. Provide your current instruction files (AGENTS.md, skills, workflows)
-4. Be ready to describe your team's actual daily routines in conversation
-
----
-
-#### Step 3 — Review (`03_review.md`)
+#### Step 2 — Review (`02_review.md`)
 
 **When:** After any significant change to your instruction system, or periodically to catch drift.
 
@@ -94,9 +75,29 @@ The three prompts are designed to be used **in order**. Each phase builds on the
 
 **How to run:**
 1. Open a new AI session
-2. Provide: `MANIFEST.md`, `brainstorm_protocol.md`, `03_review.md`
+2. Provide: `MANIFEST.md`, `brainstorm_protocol.md`, `02_review.md`
 3. Provide your full instruction system (AGENTS.md, all skills, workflows, agents)
 4. Follow the AI's phases: Audit → Clarification → Final Validation
+
+---
+
+#### Step 3 — Evolve (`03_evolution.md`)
+
+**When:** Your project has grown, your team has expanded, or your workflows have matured beyond the initial setup.
+
+**What it does:**
+- Starts with a free-form conversation about your team's daily routines and workflows
+- Identifies what skills, agents, and workflows would genuinely help
+- Proposes a complete set of additions at once
+- You review and approve before anything is created
+
+**Goal:** A comprehensive instruction system built from real usage patterns, not assumptions.
+
+**How to run:**
+1. Open a new AI session
+2. Provide: `MANIFEST.md`, `brainstorm_protocol.md`, `03_evolution.md`
+3. Provide your current instruction files (AGENTS.md, skills, workflows)
+4. Be ready to describe your team's actual daily routines in conversation
 
 ---
 
@@ -140,11 +141,11 @@ The full philosophy is in `MANIFEST.md`. The short version:
 |---------|-----|
 | Starting from scratch | `01_initial.md` |
 | Adjusting existing instructions | `01_initial.md` |
-| Project scaled up significantly | `02_evolution.md` |
-| Team workflows have matured | `02_evolution.md` |
-| After any major instruction change | `03_review.md` |
-| Periodic health check | `03_review.md` |
-| MANIFEST was updated | `03_review.md` |
+| Project scaled up significantly | `03_evolution.md` |
+| Team workflows have matured | `03_evolution.md` |
+| After any major instruction change | `02_review.md` |
+| Periodic health check | `02_review.md` |
+| MANIFEST was updated | `02_review.md` |
 
 ---
 

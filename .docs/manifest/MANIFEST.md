@@ -62,6 +62,10 @@ Execution lives in:
 - skills
 - workflows
 
+Exception: for small projects, `AGENTS.md` may contain inline routing logic
+(trivial vs non-trivial decision tree) in place of a manager skill.
+This is the only permitted policy/execution overlap, and it must remain minimal.
+
 ---
 
 ## 3. Progressive Disclosure of Complexity
@@ -143,6 +147,65 @@ Avoid:
 
 ---
 
+# Single Entry Point
+
+`AGENTS.md` is the **only** entry point for any AI tool.
+
+Every AI tool used in the project must be configured to read `AGENTS.md` first.
+The method for wiring each AI tool to `AGENTS.md` varies by tool and must be
+discovered at setup time — it must NOT be hardcoded in this document.
+
+**Responsibility:** `01_initial.md` is responsible for:
+- asking which AI tools the project uses
+- searching for the correct setup method per tool at the time of setup
+- creating the necessary entry point configuration for each tool
+
+This keeps the framework decoupled from any specific AI tool's conventions,
+which change over time.
+
+---
+
+# Canonical Pipeline Templates
+
+MANIFEST defines the canonical execution pipelines. Projects may add steps
+when genuinely justified, but may not remove or reorder the base steps.
+
+## Trivial Tasks
+
+```
+plan → execute → validate
+```
+
+Used when:
+- task is self-contained
+- risk is low
+- no orchestration is needed
+
+For very low-risk tasks (e.g. grammar fixes), `validate` may be omitted.
+This must be explicitly stated in `AGENTS.md` when permitted.
+
+## Non-Trivial Tasks (medium/large projects)
+
+```
+invoke manager → (manager selects workflow) → execute workflow → validate
+```
+
+Used when:
+- task spans multiple steps or domains
+- risk is medium or higher
+- a workflow file exists for the task type
+
+## Non-Trivial Tasks (small projects, no manager)
+
+```
+plan → execute → validate
+```
+
+When no manager skill exists, non-trivial tasks follow the same pipeline
+as trivial tasks. The AI applies judgment on step depth, not pipeline shape.
+
+---
+
 # Canonical Structure
 
 ## Root Layer
@@ -153,10 +216,11 @@ Avoid:
 - system design rules
 
 ### `AGENTS.md`
+- single entry point for all AI tools
 - operational contract
 - rules AI must follow
-- task classification
-- available capabilities
+- task classification and inline routing (small projects only)
+- capability registry (skills, workflows, agents)
 
 ---
 
@@ -180,7 +244,7 @@ Rules:
 Multi-step execution patterns.
 
 Used only for:
-- non-trivial tasks
+- non-trivial tasks on medium/large projects
 
 Rules:
 - define order of steps
@@ -200,20 +264,6 @@ Examples:
 - code reviewer
 - architect
 - researcher
-
----
-
-### `.claude/skills/manager` (or equivalent)
-Routing and orchestration logic.
-
-Responsibilities:
-- interpret task classification
-- select workflow
-- choose skills/subagents
-
-Must NOT:
-- duplicate AGENTS.md
-- implement execution steps
 
 ---
 
@@ -262,12 +312,73 @@ It must be registered in `AGENTS.md` like any other skill:
 
 ---
 
+## Manager Skill (Required for Medium and Large Projects)
+
+Medium and large projects **must** include a manager skill.
+
+This is non-negotiable for those project sizes.
+Small projects may add it explicitly if the user requests it.
+
+### Why it is mandatory for medium/large
+
+As the number of workflows and skills grows, inline routing in `AGENTS.md`
+becomes unmanageable. Manager centralizes orchestration without bloating the
+root operational contract.
+
+### What it must implement
+
+The manager skill is responsible for:
+- receiving non-trivial task descriptions
+- consulting the workflow table to select the correct workflow
+- reading and executing the selected workflow
+- falling back to `plan → execute → validate` if no matching workflow exists
+- consulting the subagent table if the task requires specialized roles
+
+It must NOT:
+- duplicate rules already in `AGENTS.md`
+- implement execution steps directly (delegate to workflows and skills)
+- define new policy
+
+### Where it lives
+
+`.claude/skills/manager.md`
+
+### Required contents
+
+The manager skill file must contain:
+
+1. **Workflow table** — maps task types to workflow files
+2. **Subagent table** — maps task types to subagents (if applicable)
+3. **Fallback rule** — explicit statement that missing workflows default to `plan → execute → validate`
+4. **Routing logic** — how to classify an incoming task and select the correct path
+
+### Fallback behavior
+
+If no workflow matches the task:
+
+```
+plan → execute → validate
+```
+
+This fallback must be explicitly stated in the manager skill file.
+
+### Registration
+
+It must be registered in `AGENTS.md`:
+- name: manager
+- purpose: routing and orchestration for non-trivial tasks
+- when to use: any non-trivial task
+- when not to use: trivial tasks; brainstorming phases
+
+---
+
 # Capability Registry
 
 AGENTS.md must contain the canonical registry of all available:
 
 - skills
-- agents
+- workflows (medium/large projects)
+- agents (if present)
 
 Each entry must include:
 - name
@@ -308,12 +419,13 @@ If a capability is not listed in AGENTS.md:
 
 ## Execution Matrix
 
-| Type | Execution |
-|------|----------|
-| Trivial + Low Risk | Direct skill execution |
-| Non-trivial + Low/Medium Risk | Workflow + validation |
-| Non-trivial + High Risk | Workflow + review loop |
-| System-level | Architect + full pipeline |
+| Type | Small Project | Medium/Large Project |
+|------|--------------|----------------------|
+| Trivial + Low Risk | `plan → execute → validate` (direct) | `plan → execute → validate` (direct) |
+| Trivial + Low Risk, minimal | `plan → execute` (if validate not needed) | `plan → execute` (if validate not needed) |
+| Non-trivial + Low/Medium Risk | `plan → execute → validate` | Manager → workflow + validation |
+| Non-trivial + High Risk | `plan → execute → validate` + review | Manager → workflow + review loop |
+| System-level | `plan → execute → validate` + review | Manager → architect + full pipeline |
 
 ---
 
@@ -353,7 +465,6 @@ Validation must:
 
 ## Always Loaded
 
-- MANIFEST.md (conceptually)
 - AGENTS.md
 
 ## On Demand
@@ -376,48 +487,53 @@ Avoid:
 
 ---
 
-# Project Size Guidelines
+# Project Size Definitions
 
-## Small Projects
+These definitions are used by `01_initial.md` to determine project scale.
+Size must be explicitly confirmed by the user — never assumed silently.
 
-Avoid:
-- workflows
-- manager skill
-- subagents
+## Small
 
-Use:
-- AGENTS.md
-- minimal skills
-- brainstorm skill (mandatory)
+- Solo or 2–3 contributors
+- Single domain or purpose
+- No established release pipeline
+- Workflows are either absent or trivially simple
 
----
+System composition:
+- `AGENTS.md` with inline routing
+- Brainstorm skill (mandatory)
+- 2–4 additional skills
+- No manager, no workflows, no subagents (unless explicitly requested)
 
-## Medium Projects
+## Medium
 
-Add:
-- skills
-- basic workflows
+- Active team, multiple contributors
+- Multiple domains or workflow types
+- Established release or review pipeline
+- Repeated non-trivial tasks that benefit from defined workflows
 
-Optional:
-- manager logic
+System composition:
+- `AGENTS.md`
+- Brainstorm skill (mandatory)
+- Manager skill (mandatory)
+- Skills for each repeated task type
+- 1–3 workflows
+- Subagents optional
 
-Always include:
-- brainstorm skill
+## Large
 
----
+- Multi-team or complex domain structure
+- Many distinct workflow types
+- High routing complexity
+- Risk-based execution is critical
 
-## Large Projects
-
-Must have:
-- manager skill
-- workflows
-- risk-based routing
-- subagents (selectively)
-- brainstorm skill
-
-Must avoid:
-- duplication
-- uncontrolled growth of instructions
+System composition:
+- `AGENTS.md`
+- Brainstorm skill (mandatory)
+- Manager skill (mandatory)
+- Domain-specific skills and workflows
+- Subagents (selectively)
+- Reference docs for architecture and conventions
 
 ---
 
@@ -466,7 +582,7 @@ When updating:
 - over-engineering
 - instruction duplication
 - unnecessary abstraction
-- AI-specific lock-in (except storage convenience)
+- AI-specific lock-in
 - hidden behavior
 
 ---

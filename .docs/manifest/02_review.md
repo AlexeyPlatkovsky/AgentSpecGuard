@@ -1,4 +1,4 @@
-# 03_review.md — Instruction System Review
+# 02_review.md — Instruction System Review
 
 ## Context Required
 
@@ -44,6 +44,30 @@ Read all provided instruction files. Validate each against MANIFEST principles.
 
 ---
 
+### 0. AI Tool Entry Points (Shim Validity)
+
+This check must be performed first.
+
+For each AI tool configured in the project:
+- verify that a shim, config entry, or equivalent exists
+- verify that it correctly directs the AI tool to read `AGENTS.md`
+- verify that it does nothing else (no inline instructions, no redirects to other files)
+
+For each shim found:
+- search for the current correct configuration method for that AI tool
+- compare the existing shim against what the current method requires
+- flag any shim that uses an outdated, deprecated, or incorrect convention
+
+Possible findings:
+- **Valid** — shim exists and correctly points to `AGENTS.md` using current method
+- **Stale** — shim exists but uses an outdated convention; may still work but should be updated
+- **Broken** — shim exists but does not correctly load `AGENTS.md`
+- **Missing** — AI tool is in use (detectable from config files, lockfiles, or project tooling) but no shim exists
+
+Any finding other than **Valid** must appear in the violations list.
+
+---
+
 ### 1. Context Minimization
 
 - Is the root context (AGENTS.md) minimal?
@@ -55,8 +79,9 @@ Read all provided instruction files. Validate each against MANIFEST principles.
 ### 2. Separation of Policy and Execution
 
 - Does AGENTS.md contain only policy (WHAT / WHEN), not execution (HOW)?
+- Exception: small projects may contain inline routing logic — is it minimal and scoped correctly?
 - Are procedures confined to skills and workflows?
-- Is any execution logic embedded in AGENTS.md?
+- Is any execution logic embedded in AGENTS.md beyond the permitted inline routing?
 
 ---
 
@@ -86,7 +111,7 @@ Any rule that exists in more than one place is a violation.
 - Does each file have exactly one responsibility?
 - Do any skills contain orchestration logic?
 - Do any workflows contain implementation details?
-- Does AGENTS.md contain execution steps?
+- Does AGENTS.md contain execution steps beyond permitted inline routing?
 - Does the manager skill (if present) duplicate AGENTS.md?
 
 ---
@@ -115,6 +140,35 @@ Any rule that exists in more than one place is a violation.
 - Is it correctly scoped (discussion only, not execution)?
 
 If the brainstorm skill is missing → this is a **Critical violation**.
+
+---
+
+### 9. Manager Skill (Mandatory for Medium/Large)
+
+First, determine the project size from context (contributor count, domain count, workflow complexity).
+
+If the project is **medium or large**:
+- Does a manager skill exist at `.claude/skills/manager.md`?
+- Is it registered in AGENTS.md?
+- Does it contain a workflow table?
+- Does it contain a subagent table (or explicitly state none exist)?
+- Does it contain an explicit fallback rule (`plan → execute → validate`)?
+- Does it contain routing logic?
+- Does it duplicate anything from AGENTS.md?
+
+If the manager skill is missing on a medium or large project → this is a **Critical violation**.
+
+If the project is **small**:
+- Is the inline routing in AGENTS.md minimal and correctly scoped?
+- Is there a manager skill present that is not needed? (over-engineering signal)
+
+---
+
+### 10. Pipeline Templates
+
+- Do the pipelines in use match the canonical templates from MANIFEST?
+- Are any extensions to the base pipeline explicitly justified?
+- Is the fallback pipeline (`plan → execute → validate`) applied correctly?
 
 ---
 
@@ -147,6 +201,14 @@ If the brainstorm skill is missing → this is a **Critical violation**.
 ## Phase 1 Output
 
 Provide:
+
+### Shim Validity Report
+
+For each AI tool entry point found (or expected):
+
+| Tool | Shim Location | Status | Notes |
+|------|--------------|--------|-------|
+| ... | ... | Valid / Stale / Broken / Missing | ... |
 
 ### Compliance Score
 A score from 0 to 100 reflecting overall alignment with MANIFEST.
@@ -248,6 +310,8 @@ Order fixes by severity. Address Critical first.
 
 Confirm or deny each of the following:
 
+- [ ] All AI tool entry points are valid and point to `AGENTS.md`
+- [ ] No stale or broken shims exist
 - [ ] No duplication exists across files
 - [ ] Responsibility boundaries are clear and enforced
 - [ ] Context is minimal — nothing unnecessary is always-loaded
@@ -255,6 +319,9 @@ Confirm or deny each of the following:
 - [ ] Complexity matches project scale — no over or under engineering
 - [ ] Brainstorm skill is present, correctly scoped, and registered
 - [ ] Brainstorm protocol is referenced, not duplicated
+- [ ] Manager skill is present and correctly structured (medium/large only)
+- [ ] Canonical pipeline templates are applied correctly
+- [ ] Fallback pipeline is explicitly defined in manager (medium/large) or AGENTS.md (small)
 
 If any item cannot be confirmed → it must appear in the fix plan.
 
@@ -265,10 +332,13 @@ If any item cannot be confirmed → it must appear in the fix plan.
 The system is valid ONLY if:
 
 - MANIFEST principles are fully respected
+- All AI tool entry points are valid and current
 - No duplicated logic exists
 - Context is minimal
 - Complexity matches project scale
 - Brainstorm skill is correctly implemented
+- Manager skill is correctly implemented (medium/large projects)
+- Canonical pipelines are applied correctly
 - System behavior is understandable from `AGENTS.md` alone
 
 If any of these fail → system is NOT compliant.
