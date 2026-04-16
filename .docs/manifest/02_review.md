@@ -26,14 +26,15 @@ Do not suggest fixes before completing the audit.
 
 ## Working Mode
 
-Work in exactly 3 phases. Do not skip or merge phases.
+Work in exactly 4 phases. Do not skip or merge phases.
 
 1. **Audit** — full analysis against MANIFEST principles
 2. **Clarification** — resolve genuine ambiguities with the user
 3. **Final Validation** — verdict and minimal fix plan
+4. **Implementation & Verification** — apply fixes and verify results (only when user requests)
 
 During Clarification: follow `brainstorm_protocol.md` exactly.
-Do NOT modify files at any point during this process.
+Do NOT modify files during Phases 1–3.
 Do NOT suggest implementation until Phase 3.
 
 ---
@@ -324,6 +325,55 @@ Confirm or deny each of the following:
 - [ ] Fallback pipeline is explicitly defined in manager (medium/large) or AGENTS.md (small)
 
 If any item cannot be confirmed → it must appear in the fix plan.
+
+---
+
+STOP after Phase 3 output.
+Do not proceed to Phase 4 until the user explicitly requests implementation.
+
+---
+
+## Phase 4 — Implementation & Verification
+
+This phase activates ONLY when the user approves the fix plan and requests implementation.
+
+### 4a. Apply Fixes
+
+Apply each fix from the Phase 3 Minimal Fix Plan, in severity order (Critical first).
+
+### 4b. Verify Every Changed File
+
+After ALL fixes are applied:
+
+1. **Structural check**: Check every created or modified file for errors (syntax, missing required fields, invalid frontmatter). Any error must be fixed before proceeding.
+2. **Content check**: Re-read each modified file and verify:
+   - YAML frontmatter is present and valid (for skill/agent files)
+   - All internal references point to correct paths
+   - No content was accidentally removed or corrupted
+3. **Re-run Structural Correctness Summary**: Go through every checkbox from Phase 3 against the actual file state. Confirm each item passes.
+
+### 4c. Verification Report
+
+```
+## Verification Report
+
+### Files Changed
+| File | Action | Structural Check | Content Check |
+|------|--------|-----------|---------------|
+| ... | created / modified | pass / fail | pass / fail |
+
+### Structural Correctness (post-fix)
+[Re-run the Phase 3 checklist with updated status]
+
+### Revised Compliance Score
+[New score with justification]
+
+### Issues Introduced by Fixes
+[List any, or "None"]
+```
+
+If any verification step fails → fix before reporting completion.
+Do NOT declare implementation complete until all checks pass.
 
 ---
 
