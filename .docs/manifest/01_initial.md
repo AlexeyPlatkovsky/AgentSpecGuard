@@ -128,9 +128,49 @@ Only begin after the user confirms the decision summary.
 - Complexity must be progressively disclosed
 - The system must match the actual project scale
 
-### Required: Brainstorm Skill
+### Required: Mandatory Gate Language in AGENTS.md
 
-Every project must include a brainstorm skill.
+Per `MANIFEST.md` Principle 9, routing rules must be written as imperative blocking instructions — not classification tables or descriptive guidance.
+
+**Non-compliant (never produce this):**
+```
+Non-trivial tasks should be routed via the manager skill.
+```
+```
+| Non-trivial + Low Risk | Workflow + validation |
+```
+
+**Compliant (always produce this pattern):**
+```
+## Task Routing — MANDATORY
+
+Before taking any action, classify the task:
+
+**If the task is trivial (isolated, low-risk, no orchestration needed):**
+Proceed directly. State your classification explicitly.
+
+**If the task is non-trivial:**
+STOP. Do not write any code, create any files, or begin implementation.
+Load [exact routing skill or agent name] NOW.
+Do not proceed until routing is resolved.
+
+**If unsure:**
+Treat as non-trivial. STOP and load the project's default routing capability.
+```
+
+Apply this pattern to:
+- the main routing gate at the top of AGENTS.md
+- any required completion steps (validation, review loops)
+- any skills declared as mandatory for a task type
+
+The gate MUST appear **before** the capability registry in AGENTS.md.
+It is the first thing the AI reads.
+Do NOT leave placeholders like `[exact routing skill or agent name]` in the final output.
+Replace them with the concrete capability the generated system requires.
+
+---
+
+### Required: Brainstorm Skill
 This is mandatory per `MANIFEST.md`.
 
 Create `.claude/skills/brainstorm.md` that:

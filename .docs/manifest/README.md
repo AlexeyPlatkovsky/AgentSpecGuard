@@ -21,8 +21,8 @@ The framework is built around one canonical document (`MANIFEST.md`) and three s
 | `MANIFEST.md` | The canonical source of truth. Defines all principles, rules, and structural requirements for any AI instruction system. |
 | `brainstorm_protocol.md` | Canonical definition of brainstorming behavior. Referenced by prompts and skills — never duplicated. |
 | `01_initial.md` | Phase 1 prompt. Builds a minimal viable instruction set for your project from scratch or adjusts an existing one. |
-| `02_review.md` | Phase 3 prompt. Audits your instruction system for compliance with MANIFEST principles. |
-| `03_evolution.md` | Phase 2 prompt. Expands your instruction system based on your team's real workflows and daily routines. |
+| `02_review.md` | Phase 2 prompt. Audits your instruction system for compliance with MANIFEST principles. |
+| `03_evolution.md` | Phase 3 prompt. Expands your instruction system based on your team's real workflows and daily routines. |
 
 ---
 
@@ -49,6 +49,7 @@ The three prompts are designed to be used **in order**. Each phase builds on the
 - Identifies your tech stack, scale, and existing instruction files
 - Asks targeted gap-filling questions (one at a time)
 - Produces a minimal, correct instruction set aligned with MANIFEST
+- Generates mandatory routing and completion gates in `AGENTS.md`
 
 **Goal:** The smallest coherent instruction system that fits your project today.
 
@@ -60,15 +61,15 @@ The three prompts are designed to be used **in order**. Each phase builds on the
 
 ---
 
-
 #### Step 2 — Review (`02_review.md`)
 
-**When:** After any significant change to your instruction system, or periodically to catch drift.
+**When:** After building your initial instruction set, or after any significant change.
 
 **What it does:**
 - Audits your entire instruction system against MANIFEST principles
 - Produces a compliance score and violations list
 - Asks clarifying questions only when genuinely ambiguous
+- Verifies that routing and completion gates are mandatory rather than descriptive
 - Produces a minimal fix plan — not a full redesign
 
 **Goal:** Confidence that your instruction system is correct, minimal, and non-duplicated.
@@ -109,6 +110,7 @@ The full philosophy is in `MANIFEST.md`. The short version:
 - **No duplication** — every rule exists in exactly one place
 - **Separation of concerns** — policy in AGENTS.md, execution in skills/workflows
 - **Progressive complexity** — don't start with subagents if a skill will do
+- **Mandatory routing gates** — non-trivial work must be blocked until the named routing capability is loaded
 - **Brainstorm skill is mandatory** — every project must have one, following `brainstorm_protocol.md`
 
 ---
@@ -124,11 +126,13 @@ The full philosophy is in `MANIFEST.md`. The short version:
 - `AGENTS.md`
 - Skills for each repeated workflow
 - 1–2 workflows for non-trivial tasks
-- Optional manager skill
+- Explicit routing gate for non-trivial tasks
+- Optional dedicated manager skill
 
 **Large project (complex, multi-domain, many contributors):**
 - `AGENTS.md`
 - Manager skill for routing
+- Explicit routing gate for non-trivial tasks
 - Domain-specific skills and workflows
 - Selective subagents
 - Reference docs for architecture and conventions
@@ -141,11 +145,11 @@ The full philosophy is in `MANIFEST.md`. The short version:
 |---------|-----|
 | Starting from scratch | `01_initial.md` |
 | Adjusting existing instructions | `01_initial.md` |
-| Project scaled up significantly | `03_evolution.md` |
-| Team workflows have matured | `03_evolution.md` |
 | After any major instruction change | `02_review.md` |
 | Periodic health check | `02_review.md` |
 | MANIFEST was updated | `02_review.md` |
+| Project scaled up significantly | `03_evolution.md` |
+| Team workflows have matured | `03_evolution.md` |
 
 ---
 

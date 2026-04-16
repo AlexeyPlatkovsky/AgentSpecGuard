@@ -45,27 +45,16 @@ Read all provided instruction files. Validate each against MANIFEST principles.
 
 ---
 
-### 0. AI Tool Entry Points (Shim Validity)
+### 0. Root Contract Presence
 
 This check must be performed first.
 
-For each AI tool configured in the project:
-- verify that a shim, config entry, or equivalent exists
-- verify that it correctly directs the AI tool to read `AGENTS.md`
-- verify that it does nothing else (no inline instructions, no redirects to other files)
+- verify that `AGENTS.md` exists and is readable
+- verify that it acts as the root operational contract
+- verify that routing and capability declarations are visible from `AGENTS.md`
+- verify that execution details are delegated to skills, workflows, and agents rather than embedded in the root file
 
-For each shim found:
-- search for the current correct configuration method for that AI tool
-- compare the existing shim against what the current method requires
-- flag any shim that uses an outdated, deprecated, or incorrect convention
-
-Possible findings:
-- **Valid** — shim exists and correctly points to `AGENTS.md` using current method
-- **Stale** — shim exists but uses an outdated convention; may still work but should be updated
-- **Broken** — shim exists but does not correctly load `AGENTS.md`
-- **Missing** — AI tool is in use (detectable from config files, lockfiles, or project tooling) but no shim exists
-
-Any finding other than **Valid** must appear in the violations list.
+Any failure here must appear in the violations list.
 
 ---
 
@@ -133,7 +122,36 @@ Any rule that exists in more than one place is a violation.
 
 ---
 
-### 8. Brainstorm Skill (Mandatory)
+### 8. Routing Language Enforcement (Critical)
+
+This is the most commonly violated principle. Routing rules that read as guidance are non-compliant regardless of intent.
+
+**Check for each routing rule in AGENTS.md:**
+
+- Is the language imperative? (`STOP`, `MUST`, `DO NOT`) — or merely descriptive? (`should`, `route via`, `recommended`)
+- Does the rule specify the exact next action? (load X skill, invoke Y agent) — or only the outcome? (use workflow, follow process)
+- Does a routing gate appear **before** the capability registry at the top of AGENTS.md?
+- Is "trivial" explicitly defined? Or is it left to AI interpretation?
+- Are completion gates (validation, review) mandatory or optional?
+
+**Non-compliant patterns — flag as violation:**
+- Classification tables presented without blocking language
+- "Should", "recommended", "route via" without a STOP instruction
+- Routing logic buried in the capability registry instead of leading AGENTS.md
+- Skills listed as "use for X" when they are mandatory for X
+
+**Compliant pattern — required:**
+- Explicit STOP before any non-trivial action
+- Named skill/agent to load immediately
+- Explicit statement that implementation must not begin until routing resolves
+
+If routing language is descriptive rather than imperative → **Critical violation**.
+If routing gate is missing from top of AGENTS.md → **Critical violation**.
+If completion gates are optional rather than mandatory → **Major violation**.
+
+---
+
+### 9. Brainstorm Skill (Mandatory)
 
 - Does a brainstorm skill exist?
 - Is it registered in AGENTS.md?
@@ -144,20 +162,20 @@ If the brainstorm skill is missing → this is a **Critical violation**.
 
 ---
 
-### 9. Manager Skill (Mandatory for Medium/Large)
+### 10. Routing Capability Requirements
 
 First, determine the project size from context (contributor count, domain count, workflow complexity).
 
-If the project is **medium or large**:
-- Does a manager skill exist at `.claude/skills/manager.md`?
-- Is it registered in AGENTS.md?
-- Does it contain a workflow table?
-- Does it contain a subagent table (or explicitly state none exist)?
-- Does it contain an explicit fallback rule (`plan → execute → validate`)?
-- Does it contain routing logic?
-- Does it duplicate anything from AGENTS.md?
 
 If the manager skill is missing on a medium or large project → this is a **Critical violation**.
+
+If the project is **medium or large**:
+- Is there either a dedicated manager skill OR another concrete routing capability named in AGENTS.md?
+- Is the non-trivial routing target unambiguous?
+- Are non-trivial tasks blocked on routing instead of being executed directly?
+- If a manager skill exists, does it satisfy the large-project checks above except where scale makes extra structure unnecessary?
+
+If project routing is ambiguous or unnamed → **Major violation**.
 
 If the project is **small**:
 - Is the inline routing in AGENTS.md minimal and correctly scoped?
@@ -165,11 +183,12 @@ If the project is **small**:
 
 ---
 
-### 10. Pipeline Templates
+### 11. Execution Matrix Application
 
-- Do the pipelines in use match the canonical templates from MANIFEST?
-- Are any extensions to the base pipeline explicitly justified?
-- Is the fallback pipeline (`plan → execute → validate`) applied correctly?
+- Is the execution matrix from MANIFEST translated into mandatory gate language rather than left as a table?
+- Are trivial tasks explicitly allowed to proceed directly?
+- Are non-trivial tasks blocked until the named routing capability is loaded?
+- Are high-risk or system-level tasks routed through stronger validation or review paths?
 
 ---
 
@@ -203,13 +222,13 @@ If the project is **small**:
 
 Provide:
 
-### Shim Validity Report
+### Routing Gate Report
 
-For each AI tool entry point found (or expected):
+For the main routing contract found in `AGENTS.md`:
 
-| Tool | Shim Location | Status | Notes |
-|------|--------------|--------|-------|
-| ... | ... | Valid / Stale / Broken / Missing | ... |
+| Location | Status | Named Capability | Notes |
+|----------|--------|------------------|-------|
+| ... | Valid / Ambiguous / Missing | ... | ... |
 
 ### Compliance Score
 A score from 0 to 100 reflecting overall alignment with MANIFEST.
@@ -311,18 +330,20 @@ Order fixes by severity. Address Critical first.
 
 Confirm or deny each of the following:
 
-- [ ] All AI tool entry points are valid and point to `AGENTS.md`
-- [ ] No stale or broken shims exist
+- [ ] `AGENTS.md` is present and acts as the root operational contract
 - [ ] No duplication exists across files
 - [ ] Responsibility boundaries are clear and enforced
 - [ ] Context is minimal — nothing unnecessary is always-loaded
 - [ ] Layering is correct — policy in AGENTS.md, execution in skills/workflows
 - [ ] Complexity matches project scale — no over or under engineering
+- [ ] Routing gates use imperative blocking language — not descriptive guidance
+- [ ] Routing gate appears at the top of AGENTS.md before capability registry
+- [ ] Trivial task classification is explicitly defined, not left to AI judgment
+- [ ] Completion gates (validation, review) are mandatory, not optional
 - [ ] Brainstorm skill is present, correctly scoped, and registered
 - [ ] Brainstorm protocol is referenced, not duplicated
-- [ ] Manager skill is present and correctly structured (medium/large only)
-- [ ] Canonical pipeline templates are applied correctly
-- [ ] Fallback pipeline is explicitly defined in manager (medium/large) or AGENTS.md (small)
+- [ ] Large and medium projects include a manager skill or name an explicit routing capability for non-trivial work
+- [ ] Execution matrix is applied through mandatory routing and completion gates
 
 If any item cannot be confirmed → it must appear in the fix plan.
 
@@ -382,13 +403,14 @@ Do NOT declare implementation complete until all checks pass.
 The system is valid ONLY if:
 
 - MANIFEST principles are fully respected
-- All AI tool entry points are valid and current
+- `AGENTS.md` remains the root operational contract
 - No duplicated logic exists
 - Context is minimal
 - Complexity matches project scale
+- Routing gates use imperative blocking language and appear before capability registry
+- Non-trivial routing is explicit, blocking, and unambiguous
 - Brainstorm skill is correctly implemented
-- Manager skill is correctly implemented (medium/large projects)
-- Canonical pipelines are applied correctly
+- Manager skill is correctly implemented where project size requires it
 - System behavior is understandable from `AGENTS.md` alone
 
 If any of these fail → system is NOT compliant.

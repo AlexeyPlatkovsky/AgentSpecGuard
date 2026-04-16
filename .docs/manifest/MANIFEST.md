@@ -62,10 +62,6 @@ Execution lives in:
 - skills
 - workflows
 
-Exception: for small projects, `AGENTS.md` may contain inline routing logic
-(trivial vs non-trivial decision tree) in place of a manager skill.
-This is the only permitted policy/execution overlap, and it must remain minimal.
-
 ---
 
 ## 3. Progressive Disclosure of Complexity
@@ -147,62 +143,53 @@ Avoid:
 
 ---
 
-# Single Entry Point
+## 9. Routing Rules Must Be Mandatory Gates
 
-`AGENTS.md` is the **only** entry point for any AI tool.
+Routing logic in `AGENTS.md` must be written as **imperative, blocking instructions** — not as classification guidance or reference tables.
 
-Every AI tool used in the project must be configured to read `AGENTS.md` first.
-The method for wiring each AI tool to `AGENTS.md` varies by tool and must be
-discovered at setup time — it must NOT be hardcoded in this document.
+### Why this matters
 
-**Responsibility:** `01_initial.md` is responsible for:
-- asking which AI tools the project uses
-- searching for the correct setup method per tool at the time of setup
-- creating the necessary entry point configuration for each tool
+Descriptive routing ("non-trivial tasks → route via manager") reads as a suggestion.
+The AI's default behavior is to begin solving immediately.
+Without a hard stop, routing is bypassed — silently and without error.
 
-This keeps the framework decoupled from any specific AI tool's conventions,
-which change over time.
-
----
-
-# Canonical Pipeline Templates
-
-MANIFEST defines the canonical execution pipelines. Projects may add steps
-when genuinely justified, but may not remove or reorder the base steps.
-
-## Trivial Tasks
+### What compliant gate language looks like
 
 ```
-plan → execute → validate
+Before taking any action on a non-trivial task:
+1. STOP.
+2. Load the designated routing skill or agent.
+3. Do not proceed until routing is resolved.
 ```
 
-Used when:
-- task is self-contained
-- risk is low
-- no orchestration is needed
+The named routing capability must be concrete.
+For large projects this is typically a manager skill.
+For smaller systems it may be a task-specific routing capability.
 
-For very low-risk tasks (e.g. grammar fixes), `validate` may be omitted.
-This must be explicitly stated in `AGENTS.md` when permitted.
-
-## Non-Trivial Tasks (medium/large projects)
+### What non-compliant language looks like
 
 ```
-invoke manager → (manager selects workflow) → execute workflow → validate
+Non-trivial tasks should be routed via the manager skill.
+```
+```
+| Non-trivial + Low Risk | Workflow + validation |
 ```
 
-Used when:
-- task spans multiple steps or domains
-- risk is medium or higher
-- a workflow file exists for the task type
+These are descriptions of intent, not enforcement mechanisms.
 
-## Non-Trivial Tasks (small projects, no manager)
+### Rules
 
-```
-plan → execute → validate
-```
+- Routing rules MUST use imperative language: STOP, MUST, DO NOT proceed
+- Routing rules MUST specify the exact next action (which skill/agent to load)
+- Routing rules MUST appear at the top of AGENTS.md, before capability registry
+- Trivial task classification MUST be explicit — the AI must justify opting out of routing
+- Skills listed as "required" for task completion MUST use mandatory language, not "use for" suggestions
 
-When no manager skill exists, non-trivial tasks follow the same pipeline
-as trivial tasks. The AI applies judgment on step depth, not pipeline shape.
+### Applies to
+
+- Task routing gates (trivial vs non-trivial)
+- Completion gates (validation, review loops)
+- Skill invocation requirements (when a skill is not optional)
 
 ---
 
@@ -216,11 +203,10 @@ as trivial tasks. The AI applies judgment on step depth, not pipeline shape.
 - system design rules
 
 ### `AGENTS.md`
-- single entry point for all AI tools
 - operational contract
 - rules AI must follow
-- task classification and inline routing (small projects only)
-- capability registry (skills, workflows, agents)
+- task classification
+- available capabilities
 
 ---
 
@@ -244,7 +230,7 @@ Rules:
 Multi-step execution patterns.
 
 Used only for:
-- non-trivial tasks on medium/large projects
+- non-trivial tasks
 
 Rules:
 - define order of steps
@@ -264,6 +250,20 @@ Examples:
 - code reviewer
 - architect
 - researcher
+
+---
+
+### `.claude/skills/manager` (or equivalent)
+Routing and orchestration logic.
+
+Responsibilities:
+- interpret task classification
+- select workflow
+- choose skills/subagents
+
+Must NOT:
+- duplicate AGENTS.md
+- implement execution steps
 
 ---
 
@@ -312,73 +312,12 @@ It must be registered in `AGENTS.md` like any other skill:
 
 ---
 
-## Manager Skill (Required for Medium and Large Projects)
-
-Medium and large projects **must** include a manager skill.
-
-This is non-negotiable for those project sizes.
-Small projects may add it explicitly if the user requests it.
-
-### Why it is mandatory for medium/large
-
-As the number of workflows and skills grows, inline routing in `AGENTS.md`
-becomes unmanageable. Manager centralizes orchestration without bloating the
-root operational contract.
-
-### What it must implement
-
-The manager skill is responsible for:
-- receiving non-trivial task descriptions
-- consulting the workflow table to select the correct workflow
-- reading and executing the selected workflow
-- falling back to `plan → execute → validate` if no matching workflow exists
-- consulting the subagent table if the task requires specialized roles
-
-It must NOT:
-- duplicate rules already in `AGENTS.md`
-- implement execution steps directly (delegate to workflows and skills)
-- define new policy
-
-### Where it lives
-
-`.claude/skills/manager.md`
-
-### Required contents
-
-The manager skill file must contain:
-
-1. **Workflow table** — maps task types to workflow files
-2. **Subagent table** — maps task types to subagents (if applicable)
-3. **Fallback rule** — explicit statement that missing workflows default to `plan → execute → validate`
-4. **Routing logic** — how to classify an incoming task and select the correct path
-
-### Fallback behavior
-
-If no workflow matches the task:
-
-```
-plan → execute → validate
-```
-
-This fallback must be explicitly stated in the manager skill file.
-
-### Registration
-
-It must be registered in `AGENTS.md`:
-- name: manager
-- purpose: routing and orchestration for non-trivial tasks
-- when to use: any non-trivial task
-- when not to use: trivial tasks; brainstorming phases
-
----
-
 # Capability Registry
 
 AGENTS.md must contain the canonical registry of all available:
 
 - skills
-- workflows (medium/large projects)
-- agents (if present)
+- agents
 
 Each entry must include:
 - name
@@ -419,13 +358,18 @@ If a capability is not listed in AGENTS.md:
 
 ## Execution Matrix
 
-| Type | Small Project | Medium/Large Project |
-|------|--------------|----------------------|
-| Trivial + Low Risk | `plan → execute → validate` (direct) | `plan → execute → validate` (direct) |
-| Trivial + Low Risk, minimal | `plan → execute` (if validate not needed) | `plan → execute` (if validate not needed) |
-| Non-trivial + Low/Medium Risk | `plan → execute → validate` | Manager → workflow + validation |
-| Non-trivial + High Risk | `plan → execute → validate` + review | Manager → workflow + review loop |
-| System-level | `plan → execute → validate` + review | Manager → architect + full pipeline |
+| Type | Execution |
+|------|----------|
+| Trivial + Low Risk | Direct skill execution |
+| Non-trivial + Low/Medium Risk | Workflow + validation |
+| Non-trivial + High Risk | Workflow + review loop |
+| System-level | Architect + full pipeline |
+
+This matrix is **not a reference table**. It must be translated into mandatory gate language in `AGENTS.md`.
+
+The AI must classify the task **before** beginning any work.
+If the task is non-trivial, the AI must STOP and load the designated routing capability for that project.
+Direct execution of non-trivial tasks without routing is a violation.
 
 ---
 
@@ -465,6 +409,7 @@ Validation must:
 
 ## Always Loaded
 
+- MANIFEST.md (conceptually)
 - AGENTS.md
 
 ## On Demand
@@ -487,53 +432,49 @@ Avoid:
 
 ---
 
-# Project Size Definitions
+# Project Size Guidelines
 
-These definitions are used by `01_initial.md` to determine project scale.
-Size must be explicitly confirmed by the user — never assumed silently.
+## Small Projects
 
-## Small
+Avoid:
+- workflows
+- manager skill
+- subagents
 
-- Solo or 2–3 contributors
-- Single domain or purpose
-- No established release pipeline
-- Workflows are either absent or trivially simple
+Use:
+- AGENTS.md
+- minimal skills
+- brainstorm skill (mandatory)
 
-System composition:
-- `AGENTS.md` with inline routing
-- Brainstorm skill (mandatory)
-- 2–4 additional skills
-- No manager, no workflows, no subagents (unless explicitly requested)
+---
 
-## Medium
+## Medium Projects
 
-- Active team, multiple contributors
-- Multiple domains or workflow types
-- Established release or review pipeline
-- Repeated non-trivial tasks that benefit from defined workflows
+Must have:
+- skills
+- basic workflows
+- explicit routing gates that name the next capability
 
-System composition:
-- `AGENTS.md`
-- Brainstorm skill (mandatory)
-- Manager skill (mandatory)
-- Skills for each repeated task type
-- 1–3 workflows
-- Subagents optional
+Optional:
+- dedicated manager skill
 
-## Large
+Always include:
+- brainstorm skill
 
-- Multi-team or complex domain structure
-- Many distinct workflow types
-- High routing complexity
-- Risk-based execution is critical
+---
 
-System composition:
-- `AGENTS.md`
-- Brainstorm skill (mandatory)
-- Manager skill (mandatory)
-- Domain-specific skills and workflows
-- Subagents (selectively)
-- Reference docs for architecture and conventions
+## Large Projects
+
+Must have:
+- manager skill
+- workflows
+- risk-based routing
+- subagents (selectively)
+- brainstorm skill
+
+Must avoid:
+- duplication
+- uncontrolled growth of instructions
 
 ---
 
@@ -582,7 +523,7 @@ When updating:
 - over-engineering
 - instruction duplication
 - unnecessary abstraction
-- AI-specific lock-in
+- AI-specific lock-in (except storage convenience)
 - hidden behavior
 
 ---
